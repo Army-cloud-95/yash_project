@@ -5,8 +5,19 @@ from datetime import datetime
 
 IND_PORTS = {502: "Modbus/TCP", 20000: "DNP3", 102: "S7Comm", 4840: "OPC UA", 44818: "EtherNet/IP"}
 WRITE_FC = {5, 6, 15, 16}
+DIAG_FC = {8}
 MAGICS = {b"\xd4\xc3\xb2\xa1": ("<", 1e6), b"\xa1\xb2\xc3\xd4": (">", 1e6),
           b"\x4d\x3c\xb2\xa1": ("<", 1e9), b"\xa1\xb2\x3c\x4d": (">", 1e9)}
+
+MITRE_ICS = {
+    "R-MB-03": ("T0855", "Unauthorized Command Message"),
+    "R-AS-01": ("T0846", "Remote System Discovery"),
+    "R-PR-01": ("T0807", "Command and Control / Unencrypted Protocol"),
+    "R-PV-01": ("T0836", "Modify Parameter / Process Deviation"),
+    "R-MB-04": ("T0887", "Reconnaissance - Exception Code Scan"),
+    "R-MB-05": ("T0815", "Denial of Control - Diagnostic Command"),
+    "R-AU-01": ("T0858", "Change Operating Mode / Parameter Tampering"),
+}
 
 def _ip(b): return ".".join(str(x) for x in b)
 
@@ -39,6 +50,12 @@ def parse_pcap(data: bytes, max_packets: int = 200_000):
         if pk: pk.update(n=n, ts=sec + frac / res); out.append(pk)
     return out, n
 
+def _with_mitre(ev_dict):
+    m_id, m_name = MITRE_ICS.get(ev_dict["rule"], ("T0800", "ICS Attack"))
+    ev_dict.setdefault("mitre_id", m_id)
+    ev_dict.setdefault("mitre_name", m_name)
+    return ev_dict
+
 def detect(packets, cfg):
     """cfg: {"assets": {ip: asset_code}, "allow": [ips allowed to send writes]}. Returns a list of events."""
     assets, allow = cfg["assets"], set(cfg.get("allow", []))
@@ -50,17 +67,17 @@ def detect(packets, cfg):
             k = (p["src"], dst, pl[7], reg)
             if k not in seen:
                 seen.add(k)
-                ev.append(dict(rule="R-MB-03", sev="high", asset=assets.get(dst, "Unmapped"), src=p["src"], dst=dst, ts=p["ts"], frame=p["n"],
+                ev.append(_with_mitre(dict(rule="R-MB-03", sev="high", asset=assets.get(dst, "Unmapped"), src=p["src"], dst=dst, ts=p["ts"], frame=p["n"],
                     title=f"Modbus write (FC {pl[7]}) from unlisted host {p['src']}",
-                    evidence=f"Frame {p['n']}, {p['src']} → {dst}:502, FC {pl[7]}, register {reg}"))
+                    evidence=f"Frame {p['n']}, {p['src']} → {dst}:502, FC {pl[7]}, register {reg}")))
         if p["dport"] in IND_PORTS and p["src"] not in known and p["src"] not in unl: unl[p["src"]] = p
         if p["dport"] == 20000 and pl[:2] == b"\x05\x64" and (p["src"], dst) not in dnp: dnp[(p["src"], dst)] = p
     for src, p in unl.items():
-        ev.append(dict(rule="R-AS-01", sev="medium", asset=assets.get(p["dst"], "Unmapped"), src=src, dst=p["dst"], ts=p["ts"], frame=p["n"],
-            title=f"Unlisted host {src} seen on {IND_PORTS[p['dport']]}", evidence=f"Frame {p['n']}, {src} → {p['dst']}:{p['dport']}"))
+        ev.append(_with_mitre(dict(rule="R-AS-01", sev="medium", asset=assets.get(p["dst"], "Unmapped"), src=src, dst=p["dst"], ts=p["ts"], frame=p["n"],
+            title=f"Unlisted host {src} seen on {IND_PORTS[p['dport']]}", evidence=f"Frame {p['n']}, {src} → {p['dst']}:{p['dport']}")))
     for (src, d), p in dnp.items():
-        ev.append(dict(rule="R-PR-01", sev="low", asset=assets.get(d, "Unmapped"), src=src, dst=d, ts=p["ts"], frame=p["n"],
-            title=f"Cleartext DNP3 traffic to {d}", evidence=f"Frame {p['n']}, {src} → {d}:20000. Secure authentication was not checked."))
+        ev.append(_with_mitre(dict(rule="R-PR-01", sev="low", asset=assets.get(d, "Unmapped"), src=src, dst=d, ts=p["ts"], frame=p["n"],
+            title=f"Cleartext DNP3 traffic to {d}", evidence=f"Frame {p['n']}, {src} → {d}:20000. Secure authentication was not checked.")))
     return sorted(ev, key=lambda x: x["ts"])
 
 REQUIRED = ["timestamp", "pressure_bar", "temperature_c", "voltage_v", "current_a", "motor_state", "valve_state"]
@@ -91,6 +108,31 @@ def analyze_series(rows, lo, hi):
     dev = [t for t, v in rows if v is not None and (v > hi or v < lo)]
     return dict(n=len(rows), missing=len(rows) - len(vals), mean=m, median=statistics.median(vals), std=sd,
                 cv=sd / m * 100 if m else None, deviations=len(dev), first_deviation=dev[0] if dev else None)
+
+def parse_plc_audit(text: str, max_rows: int = 10000):
+    """Parses PLC host audit CSV file (timestamp, asset_id, event_id, action, object, etc.)."""
+    rd = csv.DictReader(io.StringIO(text))
+    head = [h.strip().lower() for h in (rd.fieldnames or [])]
+    for req in ("timestamp", "asset_id", "action"):
+        if req not in head: raise ValueError(f"missing required audit column: {req}")
+    events = []
+    for i, r in enumerate(rd, start=2):
+        if i - 1 > max_rows: break
+        try: ts = datetime.fromisoformat(r["timestamp"].strip().replace("Z", "+00:00")).timestamp()
+        except (ValueError, KeyError, AttributeError): continue
+        events.append(dict(
+            ts=ts,
+            asset=r.get("asset_id", "").strip(),
+            event_id=r.get("event_id", "").strip(),
+            user=r.get("user", "").strip(),
+            action=r.get("action", "").strip(),
+            object=r.get("object", "").strip(),
+            old_value=r.get("old_value", "").strip(),
+            new_value=r.get("new_value", "").strip(),
+            cpu_mode=r.get("cpu_mode", "").strip(),
+            source=r.get("source", "").strip()
+        ))
+    return events
 
 def correlate(net, audit, dev_ts, window, asset):
     """net/audit: dicts with ts and asset. Links events on the same asset within +/- window of the first deviation.

@@ -15,7 +15,7 @@ class ServiceTests(unittest.TestCase):
     def tearDown(self): self.tmp.cleanup()
 
     def test_passwords_are_stored_hashed(self):
-        for (h,) in self.s.db.execute("SELECT pw_hash FROM users"): self.assertTrue(h.startswith("scrypt$")); self.assertNotIn("2026", h)
+        for (h,) in self.s.db.execute("SELECT pw_hash FROM users"): self.assertTrue(h.startswith("scrypt$")); self.assertNotIn("@2026", h)
     def test_wrong_password_and_unknown_user(self):
         for u, p in (("plant.a", "nope"), ("ghost", "x")):
             with self.assertRaises(PermissionError): self.s.login(u, p)

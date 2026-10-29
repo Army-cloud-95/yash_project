@@ -181,6 +181,57 @@ export const api = {
         Accept: "text/csv"
       }
     });
+  },
+
+  async updateAsset(plantId, code, data) {
+    return await apiRequest(`/plants/${plantId}/assets/${code}`, {
+      method: "PUT",
+      body: data
+    });
+  },
+
+  async verifyAsset(plantId, code, verified = true) {
+    return await apiRequest(`/plants/${plantId}/assets/${code}/verify`, {
+      method: "POST",
+      body: { verified }
+    });
+  },
+
+  async deleteAsset(plantId, code) {
+    return await apiRequest(`/plants/${plantId}/assets/${code}`, {
+      method: "DELETE"
+    });
+  },
+
+  async uploadAudit(plantId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return await apiRequest(`/plants/${plantId}/uploads/audit`, {
+      method: "POST",
+      body: formData
+    });
+  },
+
+  async getAuditLog({ plantId = null, limit = 100, offset = 0, action = null } = {}) {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (action) params.append("action", action);
+    const endpoint = plantId ? `/plants/${plantId}/audit?${params.toString()}` : `/audit?${params.toString()}`;
+    return await apiRequest(endpoint, { method: "GET" });
+  },
+
+  async changePassword(oldPassword, newPassword) {
+    return await apiRequest("/auth/change-password", {
+      method: "POST",
+      body: { old_password: oldPassword, new_password: newPassword }
+    });
+  },
+
+  async getPlantSummary(plantId) {
+    return await apiRequest(`/plants/${plantId}/summary`, { method: "GET" });
+  },
+
+  async getFleetSummary() {
+    return await apiRequest("/fleet/summary", { method: "GET" });
   }
 };
 
