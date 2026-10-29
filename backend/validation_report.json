@@ -1,0 +1,120 @@
+{
+  "network": {
+    "R-MB-03": {
+      "tp": 80,
+      "fp": 0,
+      "fn": 0,
+      "tn": 320,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "R-AS-01": {
+      "tp": 160,
+      "fp": 0,
+      "fn": 0,
+      "tn": 240,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "R-PR-01": {
+      "tp": 40,
+      "fp": 0,
+      "fn": 0,
+      "tn": 360,
+      "precision": 1.0,
+      "recall": 1.0
+    }
+  },
+  "scenario_pass_rate_pct": {
+    "benign": 100.0,
+    "allowed_write": 100.0,
+    "unlisted_write": 100.0,
+    "unlisted_read": 100.0,
+    "dnp3_cleartext": 100.0,
+    "write_response_direction": 100.0,
+    "write_on_other_port": 100.0,
+    "non_modbus_payload_on_502": 100.0,
+    "truncated_capture": 100.0,
+    "retransmitted_write": 100.0
+  },
+  "scenarios_per_kind": 40,
+  "crashes": 0,
+  "duplicate_findings_on_retransmit": 0,
+  "telemetry_detection": [
+    {
+      "peak_above_baseline": 0.5,
+      "series_exceeding_limit": 0.0,
+      "detected": 0.0
+    },
+    {
+      "peak_above_baseline": 1.0,
+      "series_exceeding_limit": 0.5,
+      "detected": 0.5
+    },
+    {
+      "peak_above_baseline": 1.5,
+      "series_exceeding_limit": 100.0,
+      "detected": 100.0
+    },
+    {
+      "peak_above_baseline": 2.0,
+      "series_exceeding_limit": 100.0,
+      "detected": 100.0
+    },
+    {
+      "peak_above_baseline": 3.0,
+      "series_exceeding_limit": 100.0,
+      "detected": 100.0
+    }
+  ],
+  "telemetry_false_alarms": [
+    {
+      "noise_sd": 0.1,
+      "false_alarm_series_pct": 0.0
+    },
+    {
+      "noise_sd": 0.3,
+      "false_alarm_series_pct": 0.5
+    },
+    {
+      "noise_sd": 0.5,
+      "false_alarm_series_pct": 74.0
+    },
+    {
+      "noise_sd": 0.7,
+      "false_alarm_series_pct": 100.0
+    }
+  ],
+  "correlation": [
+    {
+      "window_s": 30,
+      "planted_chain_found_pct": 10.5,
+      "linked_events_that_are_true_pct": 84.8,
+      "unrelated_scenarios_linked_pct": 9.5
+    },
+    {
+      "window_s": 60,
+      "planted_chain_found_pct": 44.5,
+      "linked_events_that_are_true_pct": 85.2,
+      "unrelated_scenarios_linked_pct": 16.0
+    },
+    {
+      "window_s": 120,
+      "planted_chain_found_pct": 100.0,
+      "linked_events_that_are_true_pct": 85.8,
+      "unrelated_scenarios_linked_pct": 33.5
+    },
+    {
+      "window_s": 300,
+      "planted_chain_found_pct": 100.0,
+      "linked_events_that_are_true_pct": 66.0,
+      "unrelated_scenarios_linked_pct": 63.0
+    },
+    {
+      "window_s": 600,
+      "planted_chain_found_pct": 100.0,
+      "linked_events_that_are_true_pct": 48.3,
+      "unrelated_scenarios_linked_pct": 90.0
+    }
+  ]
+}

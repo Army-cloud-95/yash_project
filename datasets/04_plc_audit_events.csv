@@ -1,0 +1,5 @@
+timestamp,asset_id,event_id,user,action,object,old_value,new_value,cpu_mode,source,data_label
+2026-10-14T10:00:05Z,PLC-01,A-0901,engineer.demo,LOGIN,session,,,RUN,engineering-ws 10.20.4.30,SYNTHETIC
+2026-10-14T10:15:00Z,PLC-01,A-0907,engineer.demo,LOGOUT,session,,,RUN,engineering-ws 10.20.4.30,SYNTHETIC
+2026-10-14T10:41:40Z,PLC-01,A-0918,unknown,REGISTER_WRITE,holding_register_40021,5800,7900,RUN,network 10.20.4.77,SYNTHETIC
+2026-10-14T10:44:05Z,PLC-01,A-0921,operator.demo,ALARM_ACK,high_pressure_alarm,,,RUN,hmi 10.20.4.50,SYNTHETIC

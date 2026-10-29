@@ -1,0 +1,65 @@
+{
+  "data_label": "SYNTHETIC",
+  "workspace": "Demo workspace",
+  "assets": [
+    {
+      "id": "PLC-01",
+      "name": "Boiler line controller",
+      "ip": "10.20.4.10",
+      "manufacturer": "Northwind Controls (fictional)",
+      "model": "NC-400",
+      "firmware": "V3.2.1",
+      "verified": true
+    },
+    {
+      "id": "RTU-04",
+      "name": "Remote pump RTU",
+      "ip": "10.20.4.21",
+      "manufacturer": null,
+      "model": null,
+      "firmware": null,
+      "verified": false
+    },
+    {
+      "id": "HMI-02",
+      "name": "Operator panel",
+      "ip": "10.20.4.50",
+      "manufacturer": null,
+      "model": null,
+      "firmware": null,
+      "verified": false
+    }
+  ],
+  "modbus_write_allowlist": [
+    "10.20.4.50",
+    "10.20.4.30"
+  ],
+  "thresholds": {
+    "PLC-01": {
+      "pressure_bar": {
+        "min": 5.0,
+        "max": 7.5
+      },
+      "temperature_c": {
+        "min": 60,
+        "max": 85
+      }
+    }
+  },
+  "correlation": {
+    "window_seconds": 120,
+    "match_on": [
+      "asset_id",
+      "time_window"
+    ],
+    "note": "Temporal proximity does not prove causation."
+  },
+  "attack_ics_mappings": [
+    {
+      "rule": "R-MB-03",
+      "technique": "T0836",
+      "name": "Modify Parameter",
+      "min_evidence": "packet capture + write FC"
+    }
+  ]
+}
